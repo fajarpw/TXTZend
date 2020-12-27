@@ -22,7 +22,7 @@ public class TXTZendServer {
     private JTextField textFieldServerStatus;
     private JLabel labelPort;
     private JTextField textFieldMessageReceived;
-    private JTextArea textArea1;
+    private JTextArea textAreaFileReceived;
     private JLabel labelServerStatus;
 
     public TXTZendServer(){
@@ -72,6 +72,7 @@ public class TXTZendServer {
                byteBuffer.flip();
                startRead(attachment);
                textFieldMessageReceived.setText(new String(byteBuffer.array()));
+               textAreaFileReceived.setText(new String(byteBuffer.array()));
            }
 
            @Override
