@@ -3,6 +3,14 @@ package client;
 import server.TXTZendServer;
 
 import javax.swing.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.nio.ByteBuffer;
+import java.nio.channels.AsynchronousSocketChannel;
+import java.nio.channels.CompletionHandler;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class TXTZendClient {
 
@@ -12,7 +20,7 @@ public class TXTZendClient {
     private JTextField textFieldMessage;
     private JButton buttonSendMessage;
     private JTextField textFieldPathFile;
-    private JButton selectFileButton;
+    private JButton txtButton;
     private JButton buttonSendFile;
     private JLabel labelMessage;
     private JLabel labelFile;
@@ -26,6 +34,38 @@ public class TXTZendClient {
     private JPanel panelFooter;
     private JLabel labelFooter;
 
+    AsynchronousSocketChannel universalSocketChannel = null;
+
+    public TXTZendClient(){
+        buttonConnect.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                try {
+                    EchoClient(textFieldIPAddress.getText(), Integer.parseInt(textFieldPort.getText()));
+                    textFieldStatus.setText("Connected...");
+                    JOptionPane.showMessageDialog(null, "Connected to server!");
+                    buttonConnect.setEnabled(false);
+                }catch (Exception exception){
+                    exception.printStackTrace();
+                    JOptionPane.showMessageDialog(null, exception.getMessage());
+                }
+            }
+        });
+
+        buttonSendMessage.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                try {
+                    AtomicInteger messageWritten  = new AtomicInteger(0);
+                    String message = textFieldMessage.getText();
+                    startWrite(universalSocketChannel,message,messageWritten);
+                }catch (Exception exception){
+                    JOptionPane.showMessageDialog(null,exception.getMessage());
+                }
+            }
+        });
+    }
+
     public static void main(String[] args) {
         JFrame clientGUI = new JFrame();
         clientGUI.setContentPane(new TXTZendClient().panelMain);
@@ -34,5 +74,43 @@ public class TXTZendClient {
         clientGUI.setResizable(false);
         clientGUI.pack();
         clientGUI.setVisible(true);
+    }
+
+    private void EchoClient(String ipAddress, int port) {
+        try {
+            universalSocketChannel = AsynchronousSocketChannel.open();
+        } catch (IOException ioException) {
+            ioException.printStackTrace();
+        }
+        universalSocketChannel.connect(new InetSocketAddress(ipAddress, port), universalSocketChannel, new CompletionHandler<Void, AsynchronousSocketChannel>() {
+            @Override
+            public void completed(Void result, AsynchronousSocketChannel attachment) {
+
+            }
+
+            @Override
+            public void failed(Throwable exc, AsynchronousSocketChannel attachment) {
+                System.out.println("Fail to connect to server");
+            }
+        });
+    }
+
+    private void startWrite(AsynchronousSocketChannel socketChannel, String message, AtomicInteger messageWritten){
+        ByteBuffer byteBuffer = ByteBuffer.allocate(2048);
+        byteBuffer.put(message.getBytes());
+        byteBuffer.flip();
+        messageWritten.getAndIncrement();
+        socketChannel.write(byteBuffer, socketChannel, new CompletionHandler<Integer, AsynchronousSocketChannel>() {
+            @Override
+            public void completed(Integer result, AsynchronousSocketChannel attachment) {
+
+            }
+
+            @Override
+            public void failed(Throwable exc, AsynchronousSocketChannel attachment) {
+                System.out.println("Fail to write message to server");
+            }
+        });
+
     }
 }
