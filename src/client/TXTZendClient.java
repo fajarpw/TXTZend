@@ -12,6 +12,8 @@ import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.AsynchronousSocketChannel;
 import java.nio.channels.CompletionHandler;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Scanner;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -61,7 +63,7 @@ public class TXTZendClient {
             public void actionPerformed(ActionEvent e) {
                 try {
                     AtomicInteger messageWritten  = new AtomicInteger(0);
-                    String message = textFieldMessage.getText();
+                    String message = "(" + getDate() + ") : " + textFieldMessage.getText();
                     startWrite(universalSocketChannel,message,messageWritten);
                 }catch (Exception exception){
                     JOptionPane.showMessageDialog(null,exception.getMessage());
@@ -104,6 +106,13 @@ public class TXTZendClient {
         clientGUI.setResizable(false);
         clientGUI.pack();
         clientGUI.setVisible(true);
+    }
+
+    private String getDate(){
+        DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss");
+        LocalDateTime now = LocalDateTime.now();
+        System.out.println(dtf.format(now));
+        return dtf.format(now);
     }
 
     private void EchoClient(String ipAddress, int port) {
@@ -149,6 +158,7 @@ public class TXTZendClient {
         try {
             Scanner myReader = new Scanner(txtFile);
             while (myReader.hasNextLine()) {
+                finalMessage.append("(" + getDate() + ") : ");
                 finalMessage.append(myReader.nextLine() + "\n");
                 //System.out.println(fileMessage);
             }
