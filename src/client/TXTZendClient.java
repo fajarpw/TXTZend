@@ -1,8 +1,7 @@
 package client;
 
-import server.TXTZendServer;
-
 import javax.swing.*;
+import javax.swing.filechooser.FileNameExtensionFilter;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.File;
@@ -39,21 +38,26 @@ public class TXTZendClient {
     private JPanel panelFooter;
     private JLabel labelFooter;
 
-    AsynchronousSocketChannel universalSocketChannel = null;
-    File txtFile;
-    String txtPath, fileMessage;
+    private AsynchronousSocketChannel universalSocketChannel = null;
+    private File txtFile;
+    private String txtPath, fileMessage;
+
     public TXTZendClient(){
         buttonConnect.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                try {
-                    EchoClient(textFieldIPAddress.getText(), Integer.parseInt(textFieldPort.getText()));
-                    textFieldStatus.setText("Connected...");
-                    JOptionPane.showMessageDialog(null, "Connected to server!");
-                    buttonConnect.setEnabled(false);
-                }catch (Exception exception){
-                    exception.printStackTrace();
-                    JOptionPane.showMessageDialog(null, exception.getMessage());
+                if (textFieldIPAddress.getText().equals("") || textFieldPort.getText().equals("")){
+                    JOptionPane.showMessageDialog(null,"Make sure to fill ip address and port correctly");
+                }else{
+                    try {
+                        startClient(textFieldIPAddress.getText(), Integer.parseInt(textFieldPort.getText()));
+                        textFieldStatus.setText("Connected...");
+                        JOptionPane.showMessageDialog(null, "Connected to server!");
+                        buttonConnect.setEnabled(false);
+                    }catch (Exception exception){
+                        exception.printStackTrace();
+                        JOptionPane.showMessageDialog(null, exception.getMessage());
+                    }
                 }
             }
         });
@@ -61,12 +65,16 @@ public class TXTZendClient {
         buttonSendMessage.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                try {
-                    AtomicInteger messageWritten  = new AtomicInteger(0);
-                    String message = "(" + getDate() + ") : " + textFieldMessage.getText();
-                    startWrite(universalSocketChannel,message,messageWritten);
-                }catch (Exception exception){
-                    JOptionPane.showMessageDialog(null,exception.getMessage());
+                if (textFieldMessage.getText().equals("")){
+                    JOptionPane.showMessageDialog(null,"Please enter your message");
+                }else{
+                    try {
+                        AtomicInteger messageWritten  = new AtomicInteger(0);
+                        String message = "(" + getDate() + ") : " + textFieldMessage.getText();
+                        startWrite(universalSocketChannel,message,messageWritten);
+                    }catch (Exception exception){
+                        JOptionPane.showMessageDialog(null,exception.getMessage());
+                    }
                 }
             }
         });
@@ -74,24 +82,22 @@ public class TXTZendClient {
         buttonChooseFile.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                JFileChooser fileChooser = new JFileChooser();
-                //fileChooser.showSaveDialog(null);
-                fileChooser.showOpenDialog(null);
-                txtPath = fileChooser.getSelectedFile().getPath();
-                txtFile = new File(txtPath);
-                textFieldPathFile.setText(txtPath);
-                readFile();
+                    openFile();
             }
         });
 
         buttonSendFile.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                try {
-                    AtomicInteger messageWritten  = new AtomicInteger(0);
-                    startWrite(universalSocketChannel,fileMessage,messageWritten);
-                }catch (Exception exception){
-                    JOptionPane.showMessageDialog(null,exception.getMessage());
+                if(txtFile != null){
+                    try {
+                        AtomicInteger messageWritten  = new AtomicInteger(0);
+                        startWrite(universalSocketChannel,fileMessage,messageWritten);
+                    }catch (Exception exception){
+                        JOptionPane.showMessageDialog(null,exception.getMessage());
+                    }
+                }else{
+                    JOptionPane.showMessageDialog(null,"Please choose file (.txt) first");
                 }
             }
         });
@@ -115,7 +121,7 @@ public class TXTZendClient {
         return dtf.format(now);
     }
 
-    private void EchoClient(String ipAddress, int port) {
+    private void startClient(String ipAddress, int port) {
         try {
             universalSocketChannel = AsynchronousSocketChannel.open();
         } catch (IOException ioException) {
@@ -153,18 +159,29 @@ public class TXTZendClient {
 
     }
 
+    private void openFile(){
+        JFileChooser fileChooser = new JFileChooser();
+        FileNameExtensionFilter extensionFilter = new FileNameExtensionFilter(".txt", "txt");
+        fileChooser.setFileFilter(extensionFilter);
+        int approve =  fileChooser.showOpenDialog(null);
+        if (approve == JFileChooser.APPROVE_OPTION){
+            txtPath = fileChooser.getSelectedFile().getPath();
+            txtFile = new File(txtPath);
+            textFieldPathFile.setText(txtPath);
+            readFile();
+        }
+    }
+
     private void readFile(){
         StringBuilder finalMessage = new StringBuilder();
         try {
-            Scanner myReader = new Scanner(txtFile);
-            while (myReader.hasNextLine()) {
-                finalMessage.append("(" + getDate() + ") : ");
-                finalMessage.append(myReader.nextLine() + "\n");
-                //System.out.println(fileMessage);
+            Scanner reader = new Scanner(txtFile);
+            while (reader.hasNextLine()) {
+                finalMessage.append("(" + getDate() + ") : " + reader.nextLine() + "\n");
             }
             fileMessage = finalMessage.toString();
             System.out.println(fileMessage);
-            myReader.close();
+            reader.close();
         } catch (FileNotFoundException e) {
             System.out.println("An error occurred.");
             e.printStackTrace();

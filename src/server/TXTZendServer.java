@@ -21,33 +21,39 @@ public class TXTZendServer {
     private JButton buttonListen;
     private JTextField textFieldServerStatus;
     private JLabel labelPort;
-    private JTextField textFieldMessageReceived;
-    private JTextArea textAreaFileReceived;
+    private JTextArea textAreaMessageReceived;
     private JLabel labelServerStatus;
+    private JLabel labelMessageReceived;
+
 
     public TXTZendServer(){
         buttonListen.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                try{
-                    new Thread(() -> {
-                        try {
-                            EchoServer(textFieldIPAdrress.getText(), Integer.parseInt(textFieldPort.getText()));
-                            textFieldServerStatus.setText("Server listening...");
-                            JOptionPane.showMessageDialog(null,"Server start to listening...");
-                            buttonListen.setEnabled(false);
-                    }catch (IOException ioException){
-                            ioException.printStackTrace();
+                if (textFieldIPAdrress.getText() == "" || textFieldPort.getText() == ""){
+                    JOptionPane.showMessageDialog(null,"Make sure to fill ip address and port correctly");
+                }else{
+                    try{
+                        new Thread(() -> {
+                            try {
+                                startServer(textFieldIPAdrress.getText(), Integer.parseInt(textFieldPort.getText()));
+                                textFieldServerStatus.setText("Server listening...");
+                                JOptionPane.showMessageDialog(null,"Server start to listening...");
+                                buttonListen.setEnabled(false);
+                            }catch (IOException ioException){
+                                ioException.printStackTrace();
+                            }
+                        }).start();
+                    }catch (Exception exception){
+                        JOptionPane.showMessageDialog(null, exception.getMessage());
                     }
-                    }).start();
-                }catch (Exception exception){
-                    JOptionPane.showMessageDialog(null, exception.getMessage());
                 }
+
             }
         });
     }
 
-    private void EchoServer(String ipAddress, int port) throws IOException{
+    private void startServer(String ipAddress, int port) throws IOException{
         InetSocketAddress socketAddress = new InetSocketAddress(ipAddress, port);
         AsynchronousServerSocketChannel serverSocket = AsynchronousServerSocketChannel.open().bind(socketAddress);
         serverSocket.accept(serverSocket, new CompletionHandler<AsynchronousSocketChannel, AsynchronousServerSocketChannel>() {
@@ -71,8 +77,7 @@ public class TXTZendServer {
            public void completed(Integer result, AsynchronousSocketChannel attachment) {
                byteBuffer.flip();
                startRead(attachment);
-               textFieldMessageReceived.setText(new String(byteBuffer.array()));
-               textAreaFileReceived.setText(new String(byteBuffer.array()));
+               textAreaMessageReceived.append(new String(byteBuffer.array()) + "\n");
            }
 
            @Override
